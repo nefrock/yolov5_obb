@@ -119,7 +119,7 @@ def py_cpu_nms_poly_fast(dets, thresh):
         # order_hbb = order[h_keep_inds + 1]
         order = order[inds + 1]
         # pdb.set_trace()
-        # order = np.concatenate((order_obb, order_hbb), axis=0).astype(np.int)
+        # order = np.concatenate((order_obb, order_hbb), axis=0).astype(np.int_)
     return keep
 
 def py_cpu_nms(dets, thresh):
