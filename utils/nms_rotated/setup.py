@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 import os
-import subprocess
-import time
 from setuptools import find_packages, setup
 
 import torch
 from torch.utils.cpp_extension import (BuildExtension, CppExtension,
                                        CUDAExtension)
-def make_cuda_ext(name, module, sources, sources_cuda=[]):
 
+def make_cuda_ext(name, module, sources, sources_cuda=[]):
     define_macros = []
     extra_compile_args = {'cxx': []}
 
@@ -37,6 +35,8 @@ if __name__ == '__main__':
     #write_version_py()
     setup(
         name='nms_rotated',
+        packages=find_packages(),
+        py_modules=['nms_rotated_wrapper', 'nms_rotated'],
         ext_modules=[
             make_cuda_ext(
                 name='nms_rotated_ext',
