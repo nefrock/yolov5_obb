@@ -556,7 +556,8 @@ def main(opt, callbacks=Callbacks()):
                 'hsv_v': (1, 0.0, 0.9),  # image HSV-Value augmentation (fraction)
                 'degrees': (1, 0.0, 45.0),  # image rotation (+/- deg)
                 'translate': (1, 0.0, 0.9),  # image translation (+/- fraction)
-                'scale': (1, 0.0, 0.9),  # image scale (+/- gain)
+                'scale_up': (1, 0.0, 2.0),  # image scale (+ gain)
+                'scale_down': (1, 0.0, 0.9),  # image scale (- gain)
                 'shear': (1, 0.0, 10.0),  # image shear (+/- deg)
                 'perspective': (0, 0.0, 0.001),  # image perspective (+/- fraction), range 0-0.001
                 'flipud': (1, 0.0, 1.0),  # image flip up-down (probability)

@@ -599,7 +599,8 @@ class LoadImagesAndLabels(Dataset):
                 img, labels = random_perspective(img, labels,
                                                  degrees=hyp['degrees'],
                                                  translate=hyp['translate'],
-                                                 scale=hyp['scale'],
+                                                 scale_up=hyp['scale_up'],
+                                                 scale_down=hyp['scale_down'],
                                                  shear=hyp['shear'],
                                                  perspective=hyp['perspective'])
 
@@ -778,7 +779,8 @@ def load_mosaic(self, index):
     img4, labels4 = random_perspective(img4, labels4, segments4,
                                        degrees=self.hyp['degrees'],
                                        translate=self.hyp['translate'],
-                                       scale=self.hyp['scale'],
+                                       scale_up=self.hyp['scale_up'],
+                                       scale_down=self.hyp['scale_down'],
                                        shear=self.hyp['shear'],
                                        perspective=self.hyp['perspective'],
                                        border=self.mosaic_border)  # border to remove
@@ -865,7 +867,8 @@ def load_mosaic9(self, index):
     img9, labels9 = random_perspective(img9, labels9, segments9,
                                        degrees=self.hyp['degrees'],
                                        translate=self.hyp['translate'],
-                                       scale=self.hyp['scale'],
+                                       scale_up=self.hyp['scale_up'],
+                                       scale_down=self.hyp['scale_down'],
                                        shear=self.hyp['shear'],
                                        perspective=self.hyp['perspective'],
                                        border=self.mosaic_border)  # border to remove
