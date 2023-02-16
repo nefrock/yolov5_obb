@@ -352,17 +352,18 @@ class TFModel:
         # Add TensorFlow NMS
         if tf_nms:
             boxes = self._xywh2xyxy(x[0][..., :4])
+            n_classes = int(self.yaml['nc'])
             probs = x[0][:, :, 4:5]
-            classes = x[0][:, :, 5:]
+            classes = x[0][:, :, 5:5+n_classes]
             scores = probs * classes
+            theta_index = tf.cast(tf.math.argmax(x[0][:, :, 5+n_classes:], axis=2), tf.float32)
+            # [n_conf_thres, 1] θ ∈ [-pi/2, pi/2)
+            theta = (theta_index - 90.0) / 180.0 * tf.constant(np.pi, dtype=tf.float32)
             if agnostic_nms:
                 nms = AgnosticNMS()((boxes, classes, scores), topk_all, iou_thres, conf_thres)
-                return nms, x[1]
             else:
-                boxes = tf.expand_dims(boxes, 2)
-                nms = tf.image.combined_non_max_suppression(
-                    boxes, scores, topk_per_class, topk_all, iou_thres, conf_thres, clip_boxes=False)
-                return nms, x[1]
+                nms = CustomNMS()((boxes, theta, classes, scores), n_classes, topk_all, iou_thres, conf_thres)
+            return (nms,)
 
         return x[0]  # output only first tensor [1,6300,85] = [xywh, conf, class0, class1, ...]
         # x = x[0][0]  # [x(1,6300,85), ...] to x(6300,85)
@@ -376,6 +377,46 @@ class TFModel:
         # Convert nx4 boxes from [x, y, w, h] to [x1, y1, x2, y2] where xy1=top-left, xy2=bottom-right
         x, y, w, h = tf.split(xywh, num_or_size_splits=4, axis=-1)
         return tf.concat([x - w / 2, y - h / 2, x + w / 2, y + h / 2], axis=-1)
+
+
+class CustomNMS(keras.layers.Layer):
+    def call(self, inputs, n_classes, topk_all=100, iou_thres=0.45, conf_thres=0.25):
+        return tf.map_fn(lambda x: self._nms(x, n_classes, topk_all, iou_thres, conf_thres), inputs,
+                         fn_output_signature=tf.float32, name='custom_nms')
+
+    def _nms(self, inputs, n_classes, topk_all, iou_thres, conf_thres):
+        boxes, theta, classes, scores = inputs
+        # Get maximum score across classes
+        classes = tf.cast(tf.argmax(scores, axis=-1), tf.float32)
+        scores = tf.reduce_max(scores, axis=-1)
+        topk_per_class = int(topk_all // n_classes)
+        nms = []
+        for cls in range(n_classes):
+            class_indices = tf.where(tf.equal(classes, cls))
+            boxes_cls = tf.squeeze(tf.gather(boxes, class_indices))
+            theta_cls = tf.squeeze(tf.gather(theta, class_indices))
+            scores_cls = tf.squeeze(tf.gather(scores, class_indices))
+            classes_cls = tf.squeeze(tf.gather(classes, class_indices))
+            indices = tf.image.non_max_suppression(
+                boxes_cls, scores_cls, topk_per_class, iou_thres, conf_thres)
+            # Combine into single tensor (boxes, theta, scores, classes)
+            nms_cls = tf.concat([
+                self._xyxy2xywh(tf.gather(boxes_cls, indices)),
+                tf.expand_dims(tf.gather(theta_cls, indices), 1),
+                tf.expand_dims(tf.gather(scores_cls, indices), 1),
+                tf.expand_dims(tf.gather(classes_cls, indices), 1)], axis=1)
+            # Pad to topk_per_class
+            nms_cls = tf.pad(nms_cls, [[0, topk_per_class - tf.shape(nms_cls)[0]], [0, 0]])
+            nms.append(nms_cls)
+        # Combine all classes
+        nms = tf.concat(nms, axis=0)
+        return nms
+
+    @staticmethod
+    def _xyxy2xywh(xyxy):
+        # Convert nx4 boxes from [x1, y1, x2, y2] to [x, y, w, h] where xy1=top-left, xy2=bottom-right
+        x1, y1, x2, y2 = tf.split(xyxy, num_or_size_splits=4, axis=-1)
+        return tf.concat([(x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1], axis=-1)
 
 
 class AgnosticNMS(keras.layers.Layer):
