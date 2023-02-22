@@ -363,7 +363,7 @@ class TFModel:
                 nms = AgnosticNMS()((boxes, classes, scores), topk_all, iou_thres, conf_thres)
             else:
                 nms = CustomNMS()((boxes, theta, classes, scores), n_classes, topk_all, iou_thres, conf_thres)
-            return (nms,)
+            return nms
 
         return x[0]  # output only first tensor [1,6300,85] = [xywh, conf, class0, class1, ...]
         # x = x[0][0]  # [x(1,6300,85), ...] to x(6300,85)
