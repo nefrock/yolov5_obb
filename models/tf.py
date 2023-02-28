@@ -353,10 +353,10 @@ class TFModel:
         if tf_nms:
             boxes = self._xywh2xyxy(x[0][..., :4])
             n_classes = int(self.yaml['nc'])
-            probs = x[0][:, :, 4:5]
-            classes = x[0][:, :, 5:5+n_classes]
+            probs = x[0][..., 4:5]
+            classes = x[0][..., 5:5+n_classes]
             scores = probs * classes
-            theta_index = tf.cast(tf.math.argmax(x[0][:, :, 5+n_classes:], axis=2), tf.float32)
+            theta_index = tf.cast(tf.math.argmax(x[0][..., 5+n_classes:], axis=2), tf.float32)
             # [n_conf_thres, 1] θ ∈ [-pi/2, pi/2)
             theta = (theta_index - 90.0) / 180.0 * tf.constant(np.pi, dtype=tf.float32)
             if agnostic_nms:
